@@ -16,40 +16,11 @@
 extern char *__progname;
 static void noreturn usage(void);
 
-int main(int argc, char *argv[])
-{
-	char *filename = NULL;
-	int ch;
-	
-	while ((ch = getopt(argc, argv, "f:")) != -1)
-		switch (ch) {
-		case 'f':
-			if (filename)
-				usage();
-			filename = optarg;
-			break;
-		default:
-			usage();
-		}
-	argc -= optind;
-	argv += optind;
-	if (not filename)
-		usage();
-	if (*argv != NULL)
-		usage();
-
-
-	return EXIT_SUCCESS;
-}
-
-static void noreturn usage(void)
-{
-	(void)fprintf(stderr, "usage: \t%1$s -l -f romimg\n"
-				"\t%1$s -x -f romimg\n",
-		__progname
-	);
-	exit(EXIT_FAILURE);
-}
+enum mode_e {
+	MODE_IDK,
+	MODE_LIST,
+	MODE_EXTRACT,
+};
 
 enum endianness_e {
 	E_IDK,
@@ -99,23 +70,45 @@ int num2bcd(unsigned num)
 	return (num % 10) + (num/10)*16;
 }
 
-int oldmain(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
-	__label__ out_return, out_close;
-	char *zErr = NULL;
+	char *filename = NULL;
+	int ch;
+	enum mode_e mode = MODE_IDK;
 	struct romdir_e *romdir;
 	enum endianness_e endianness;
-
-	if (argc < 2) {
+	
+	while ((ch = getopt(argc, argv, "lxf:")) != -1)
+		switch (ch) {
+		case 'f':
+			if (filename)
+				usage();
+			filename = optarg;
+			break;
+		case 'l':
+			if (mode != MODE_IDK)
+				usage();
+			mode = MODE_LIST;
+			break;
+		case 'x':
+			if (mode != MODE_IDK)
+				usage();
+			mode = MODE_EXTRACT;
+			break;
+		default:
+			usage();
+		}
+	argc -= optind;
+	argv += optind;
+	if (not filename)
 		usage();
-		return 1;
-	}
+	if (mode == MODE_IDK)
+		usage();
+	if (*argv != NULL)
+		usage();
 
-	struct MappedFile_s m = MappedFile_Open(argv[1], false);
-	if (!m.data) {
-		zErr = "couldn't open file";
-		goto out_return;
-	}
+	struct MappedFile_s m = MappedFile_Open(filename, false);
+	if (!m.data) err(1, "couldn't open file");
 
 	romdir = memmem(
 		(void *) m.data,
@@ -123,21 +116,17 @@ int oldmain(int argc, char *argv[])
 		(void *) "RESET",
 		(size_t) 5	// note: not including null terminator
 	);
-	if (!romdir) {
-		zErr = "couldn't find RESET";
-		goto out_close;
-	}
+	if (!romdir) errx(1, "couldn't find RESET");
 
 	// check endianness of archive
-	if (!memcmp(romdir, "RESET", 6)) {
+	if (!memcmp(romdir, "RESET", 6)) { //including null terminator
 		// little endian
 		endianness = E_LITTLE;
 	} else if (!memcmp(romdir, "RESETB", 7)) {
 		// big endian
 		endianness = E_BIG;
 	} else {
-		zErr = "indeterminate endianness";
-		goto out_close;
+		errx(1, "indeterminate endianness");
 	}
 
 	off_t offset = 0;
@@ -225,31 +214,36 @@ int oldmain(int argc, char *argv[])
 		if(!strcmp("-", name)) {
 			last_file_was_padding = true;
 		} else {
-			n = MappedFile_Create(name, file_size);
-			if (!n.data) continue;
-			memcpy(n.data, m.data + offset, file_size);
-			MappedFile_Close(n);
-			if (did_set_date) {
-				struct utimbuf times = {.actime = mytime, .modtime = mytime};
-				if (utime(name, &times)) err(1, "couldn't set time");
+			if (mode == MODE_EXTRACT) {
+				n = MappedFile_Create(name, file_size);
+				if (!n.data) err(1, "couldn't create file");
+				memcpy(n.data, m.data + offset, file_size);
+				MappedFile_Close(n);
+				if (did_set_date) {
+					struct utimbuf times = {.actime = mytime, .modtime = mytime};
+					if (utime(name, &times)) err(1, "couldn't set time");
+				}
 			}
-			if ((offset & 0xfff) == 0) {
+			if (((offset & 0xfff) == 0) && last_file_was_padding) {
 				printf("^^ fixed position\n");
-				last_file_was_padding = false;
 			}
+			last_file_was_padding = false;
 		}
 
 		offset += (file_size+15) & ~15;
 		extinfo_offset += extinfo_size;
 	}
 
-out_close:
 	MappedFile_Close(m);
-out_return:
-	if (zErr) {
-		fprintf(stderr, "error: %s\n", zErr);
-		return 1;
-	} else {
-		return 0;
-	}
+
+	return EXIT_SUCCESS;
+}
+
+static void noreturn usage(void)
+{
+	(void)fprintf(stderr, "usage: \t%1$s -l -f romimg\n"
+				"\t%1$s -x -f romimg\n",
+		__progname
+	);
+	exit(EXIT_FAILURE);
 }
