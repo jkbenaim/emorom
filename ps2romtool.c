@@ -224,7 +224,7 @@ int main(int argc, char *argv[])
 					if (utime(name, &times)) err(1, "couldn't set time");
 				}
 			}
-			if (((offset & 0xfff) == 0) && last_file_was_padding) {
+			if (((offset & 0x7ff) == 0) && last_file_was_padding) {
 				printf("^^ fixed position\n");
 			}
 			last_file_was_padding = false;
