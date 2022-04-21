@@ -1,9 +1,9 @@
 target  ?= ps2romtool
 objects := $(patsubst %.c,%.o,$(wildcard *.c))
 
-libs:=
+#libs:=
 
-# EXTRAS += -fsanitize=undefined -fsanitize=null -fcf-protection=full -fstack-protector-all -fstack-check -Wimplicit-fallthrough
+EXTRAS += -fsanitize=undefined -fsanitize=null -fcf-protection=full -fstack-protector-all -fstack-check -Wimplicit-fallthrough -flto
 
 ifdef libs
 LDLIBS  += $(shell pkg-config --libs   ${libs})
@@ -18,6 +18,8 @@ all:	$(target)
 
 .PHONY: clean
 clean:
-	rm -f $(target) $(objects)
+	rm -f $(target) $(objects) lex lex.o
+
+lex: lex.o mapfile.o hexdump.o
 
 $(target): $(objects)

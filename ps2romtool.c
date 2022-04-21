@@ -11,10 +11,31 @@
 #include <time.h>
 #include <unistd.h>
 #include <utime.h>
+#include "hexdump.h"
 #include "mapfile.h"
+#include "types.h"
 
 extern char *__progname;
 static void noreturn usage(void);
+
+struct fixie_s {
+	const char *name;
+	unsigned addr;
+} fixies[] = {
+	{   "RESET",       0x0},
+	{   "RDRAM",   0x41000},
+	{  "RDRAM1",   0x44000},
+	{  "RDRAM2",   0x47000},
+	{ "IOPBOOT",   0x4a000},
+	{    "TBIN",   0x4b800},
+	{   "KROMG",   0x64000},
+	{    "KROM",   0x66000},
+	{  "ROMVER",   0x7ff00}, // here if deckard, otherwise after extinfo
+	{  "VERSTR",   0x7ff30},
+	{"ROMGSCRT",   0x80000},
+	{ "DECKARD",  0x3e0000},
+	{0},
+};
 
 enum mode_e {
 	MODE_IDK,
@@ -28,26 +49,18 @@ enum endianness_e {
 	E_BIG,
 };
 
-struct __attribute__((packed)) romdir_e {
-	char name[10];
-	uint16_t ext_info_size;
-	uint32_t file_size;
-};
-
-struct __attribute__((packed)) extinfo_entry_s {
-	uint8_t val1;
-	uint8_t val2;
-	uint8_t len;
-	uint8_t type;
-	uint8_t data[];
-};
-
-enum extinfo_types_e {
-	EXTINFO_TYPE_DATE = 1,
-	EXTINFO_TYPE_VERSION,
-	EXTINFO_TYPE_COMMENT,
-	EXTINFO_TYPE_NULL = 127,
-};
+void print_extinfo(struct extinfo_entry_s *e)
+{
+	printf("\n%3d %3d %3x %3d\n",
+		e->val1,
+		e->val2,
+		e->len,
+		e->type
+	);
+	if (e->len > 0) {
+		hexdump(e->data, e->len);
+	}
+}
 
 int bcd2num(unsigned bcd)
 {
@@ -158,8 +171,11 @@ int main(int argc, char *argv[])
 		uint16_t extinfo_size;
 		uint32_t file_size;
 		struct MappedFile_s n;
+		bool should_extract = true;
+		bool should_display = true;
 
 		memcpy(name, cur->name, 10);
+
 		switch (endianness) {
 		case E_BIG:
 			extinfo_size = be16toh(cur->ext_info_size);
@@ -171,8 +187,21 @@ int main(int argc, char *argv[])
 			file_size = le32toh(cur->file_size);
 			break;
 		}
-		printf("0x%08x %10s", offset, name);
-		void *thingy = extinfo_ptr + extinfo_offset;
+
+		if(!strcmp("-", name)) {
+			should_extract = false;
+			should_display = false;
+			uint8_t *filedata = (uint8_t *)(m.data + offset);
+			for (size_t i = 0; i < file_size; i++) {
+				if (filedata[i] != 0) {
+					should_extract = true;
+					should_display = true;
+					break;
+				}
+			}
+		}
+
+		if (should_display) printf("%-10s", name);
 		bool did_set_date = false;
 		time_t mytime = 0;
 		struct tm mytm = {0};
@@ -180,13 +209,14 @@ int main(int argc, char *argv[])
 			struct extinfo_entry_s *e;
 			e = (struct extinfo_entry_s *)(extinfo_ptr + extinfo_offset + i);
 			switch(e->type) {
-			case EXTINFO_TYPE_DATE:
-				printf(" %02x%02x-%02x%02x",
-					e->data[3],
-					e->data[2],
-					e->data[1],
-					e->data[0]
-				);
+			case ET_DATE:
+				if (should_display)
+					printf(" %02x%02x-%02x%02x",
+						e->data[3],
+						e->data[2],
+						e->data[1],
+						e->data[0]
+					);
 				mytm.tm_year = bcd2num(e->data[3])*100 - 1900;
 				mytm.tm_year += bcd2num(e->data[2]);
 				mytm.tm_mon = bcd2num(e->data[1]) - 1;
@@ -195,39 +225,46 @@ int main(int argc, char *argv[])
 				if (mytime != (time_t)-1)
 					did_set_date = true;
 				break;
-			case EXTINFO_TYPE_VERSION:
-				printf(" v%d.%d",
-					e->val2,
-					e->val1
-				);
+			case ET_VERSION:
+				if (should_display)
+					printf(" v%d.%d",
+						e->val2,
+						e->val1
+					);
 				break;
-			case EXTINFO_TYPE_COMMENT:
-				printf("\t%s", e->data);
+			case ET_COMMENT:
+				if (should_display)
+					printf(" \"%s\"", e->data);
+				break;
+			case ET_FIXEDADDR:
+				if (should_display)
+					printf(" FIXEDADDR=0x%x", offset);
 				break;
 			default:
+				if (should_display) {
+					printf("\n unknown extinfo tag %d\n", e->type);
+					print_extinfo(e);
+				}
 				break;
 			}
 			i += sizeof(struct extinfo_entry_s) + e->len;
 		}
-		printf("\n");
+		if (should_display) printf("\n");
 
-		if(!strcmp("-", name)) {
-			last_file_was_padding = true;
-		} else {
-			if (mode == MODE_EXTRACT) {
-				n = MappedFile_Create(name, file_size);
-				if (!n.data) err(1, "couldn't create file");
-				memcpy(n.data, m.data + offset, file_size);
-				MappedFile_Close(n);
-				if (did_set_date) {
-					struct utimbuf times = {.actime = mytime, .modtime = mytime};
-					if (utime(name, &times)) err(1, "couldn't set time");
-				}
+		if ((mode == MODE_EXTRACT) && should_extract) {
+			if (!strcmp("-", name)) {
+				snprintf(name, sizeof(name) - 1, "%08xh", offset);
+				name[sizeof(name) - 1] = '\0';
+				hexdump(m.data + offset, file_size);
 			}
-			if (((offset & 0x7ff) == 0) && last_file_was_padding) {
-				printf("^^ fixed position\n");
+			n = MappedFile_Create(name, file_size);
+			if (!n.data) err(1, "couldn't create file");
+			memcpy(n.data, m.data + offset, file_size);
+			MappedFile_Close(n);
+			if (did_set_date) {
+				struct utimbuf times = {.actime = mytime, .modtime = mytime};
+				if (utime(name, &times)) err(1, "couldn't set time");
 			}
-			last_file_was_padding = false;
 		}
 
 		offset += (file_size+15) & ~15;
