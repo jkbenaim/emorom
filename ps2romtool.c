@@ -49,7 +49,7 @@ enum endianness_e {
 	E_BIG,
 };
 
-void print_extinfo(struct extinfo_entry_s *e)
+void print_extinfo(struct extinfo_s *e)
 {
 	printf("\n%3d %3d %3x %3d\n",
 		e->val1,
@@ -88,7 +88,7 @@ int main(int argc, char *argv[])
 	char *filename = NULL;
 	int ch;
 	enum mode_e mode = MODE_IDK;
-	struct romdir_e *romdir;
+	struct romdir_s *romdir;
 	enum endianness_e endianness;
 	
 	while ((ch = getopt(argc, argv, "lxf:")) != -1)
@@ -145,17 +145,17 @@ int main(int argc, char *argv[])
 	off_t offset = 0;
 	off_t extinfo_offset = 0;
 	void *extinfo_ptr = NULL;
-	for (struct romdir_e *cur = romdir; cur->name[0]; cur++) {
+	for (struct romdir_s *cur = romdir; cur->name[0]; cur++) {
 		uint32_t file_size;
 		char name[11] = {'\0'};
 		memcpy(name, cur->name, 10);
 		switch (endianness) {
 		case E_BIG:
-			file_size = be32toh(cur->file_size);
+			file_size = be32toh(cur->size);
 			break;
 		case E_LITTLE:
 		default:
-			file_size = le32toh(cur->file_size);
+			file_size = le32toh(cur->size);
 			break;
 		}
 		if (!strcmp("EXTINFO", name)) {
@@ -166,7 +166,7 @@ int main(int argc, char *argv[])
 	}
 	offset = 0;
 	bool last_file_was_padding = false;
-	for(struct romdir_e *cur = romdir; cur->name[0]; cur++) {
+	for(struct romdir_s *cur = romdir; cur->name[0]; cur++) {
 		char name[11] = {'\0'};
 		uint16_t extinfo_size;
 		uint32_t file_size;
@@ -178,19 +178,19 @@ int main(int argc, char *argv[])
 
 		switch (endianness) {
 		case E_BIG:
-			extinfo_size = be16toh(cur->ext_info_size);
-			file_size = be32toh(cur->file_size);
+			extinfo_size = be16toh(cur->extinfo_size);
+			file_size = be32toh(cur->size);
 			break;
 		case E_LITTLE:
 		default:
-			extinfo_size = le16toh(cur->ext_info_size);
-			file_size = le32toh(cur->file_size);
+			extinfo_size = le16toh(cur->extinfo_size);
+			file_size = le32toh(cur->size);
 			break;
 		}
 
 		if(!strcmp("-", name)) {
 			should_extract = false;
-			should_display = false;
+			//should_display = false;
 			uint8_t *filedata = (uint8_t *)(m.data + offset);
 			for (size_t i = 0; i < file_size; i++) {
 				if (filedata[i] != 0) {
@@ -201,13 +201,13 @@ int main(int argc, char *argv[])
 			}
 		}
 
-		if (should_display) printf("%-10s", name);
+		if (should_display) printf("%-10s     ", name);
 		bool did_set_date = false;
 		time_t mytime = 0;
 		struct tm mytm = {0};
 		for (size_t i = 0; i < extinfo_size;) {
-			struct extinfo_entry_s *e;
-			e = (struct extinfo_entry_s *)(extinfo_ptr + extinfo_offset + i);
+			struct extinfo_s *e;
+			e = (struct extinfo_s *)(extinfo_ptr + extinfo_offset + i);
 			switch(e->type) {
 			case ET_DATE:
 				if (should_display)
@@ -247,7 +247,7 @@ int main(int argc, char *argv[])
 				}
 				break;
 			}
-			i += sizeof(struct extinfo_entry_s) + e->len;
+			i += sizeof(struct extinfo_s) + e->len;
 		}
 		if (should_display) printf("\n");
 

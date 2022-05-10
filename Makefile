@@ -1,9 +1,9 @@
 target  ?= ps2romtool
 objects := $(patsubst %.c,%.o,$(wildcard *.c))
 
-#libs:=
+libs:=sqlite3
 
-EXTRAS += -fsanitize=undefined -fsanitize=null -fcf-protection=full -fstack-protector-all -fstack-check -Wimplicit-fallthrough -flto
+#EXTRAS += -fsanitize=undefined -fsanitize=null -fcf-protection=full -fstack-protector-all -fstack-check -Wimplicit-fallthrough -flto
 
 ifdef libs
 LDLIBS  += $(shell pkg-config --libs   ${libs})

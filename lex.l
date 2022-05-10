@@ -7,12 +7,12 @@
 #include "mapfile.h"
 #include "types.h"
 
-struct romlump_s *head = NULL;
-struct romlump_s *tail = NULL;
+struct lump_s *head = NULL;
+struct lump_s *tail = NULL;
 
 void new_lump()
 {
-	struct romlump_s *newlump = calloc(1, sizeof(struct romlump_s));
+	struct lump_s *newlump = calloc(1, sizeof(struct lump_s));
 	if (!newlump) err(1, "malloc failure");
 
 	if (tail) {
@@ -25,7 +25,7 @@ void new_lump()
 
 void free_lumps()
 {
-	struct romlump_s *temp;
+	struct lump_s *temp;
 	while (head) {
 		temp = head->next;
 		head->next = NULL;
@@ -39,7 +39,7 @@ void free_lumps()
 
 void print_lumps()
 {
-	struct romlump_s *lump = head;
+	struct lump_s *lump = head;
 	while (lump) {
 		printf("%-10s", lump->name);
 		if (lump->date_present)
@@ -65,9 +65,9 @@ void print_lumps()
 	}
 }
 
-struct romlump_s *get_lump_for_name(const char *name)
+struct lump_s *get_lump_for_name(const char *name)
 {
-	struct romlump_s *cur = head;
+	struct lump_s *cur = head;
 	while (cur) {
 		if (!strncmp(cur->name, name, sizeof(cur->name)))
 			return cur;
@@ -78,8 +78,8 @@ struct romlump_s *get_lump_for_name(const char *name)
 
 void make_extinfo()
 {
-	struct romlump_s *extinfo;
-	struct romlump_s *cur;
+	struct lump_s *extinfo;
+	struct lump_s *cur;
 	size_t offset = 0;
 
 	extinfo = get_lump_for_name("EXTINFO");
@@ -92,12 +92,12 @@ void make_extinfo()
 	if (!extinfo->data)
 		err(1, "malloc failure");
 
-	struct extinfo_entry_s *extend(struct romlump_s *lump, size_t size)
+	struct extinfo_s *extend(struct lump_s *lump, size_t size)
 	{
-		struct extinfo_entry_s *e = NULL;
+		struct extinfo_s *e = NULL;
 		// round up to multiple of 4
 		size = (size + 3) & ~3;
-		size += sizeof(struct extinfo_entry_s);
+		size += sizeof(struct extinfo_s);
 		lump->extinfo_size += size;
 		extinfo->data = realloc(extinfo->data, extinfo->size + size);
 		if (!extinfo->data)
@@ -111,7 +111,7 @@ void make_extinfo()
 	
 	cur = head;
 	while (cur) {
-		struct extinfo_entry_s *e;
+		struct extinfo_s *e;
 		if (cur->date_present) {
 			e = extend(cur, 4);
 			e->type = ET_DATE;
@@ -138,16 +138,93 @@ void make_extinfo()
 		cur = cur->next;
 	}
 }
+
+void make_romdir()
+{
+	struct lump_s *romdir = NULL;
+	struct lump_s *cur = NULL;
+
+	romdir = get_lump_for_name("ROMDIR");
+	if (!romdir)
+		errx(1, "no ROMDIR lump");
+	
+	cur = head;
+	size_t num_files = 0;
+	while (cur) {
+		num_files++;
+		if (cur->fixedaddr_present) {
+			// we will need to add a padding file
+			num_files++;
+		}
+		cur = cur->next;
+	}
+
+	romdir->size = num_files * sizeof(struct romdir_s);
+	free(romdir->data);
+	romdir->data = calloc(num_files, sizeof(struct romdir_s));
+	if (!romdir->data)
+		err(1, "calloc failure");
+	
+	struct romdir_s *dir = romdir->data;
+	cur = head;
+	size_t size_so_far = 0;
+	while (cur) {
+		if (cur->fixedaddr_present && (cur->fixedaddr != size_so_far)) {
+			// insert a padding file in the romdir
+			size_t padsize = cur->fixedaddr - size_so_far;
+			if (cur->fixedaddr < size_so_far)
+				errx(1, "FIXEDADDR directive overwrites existing file");
+			strcpy(dir->name, "-");
+			dir->extinfo_size = htole16(0);
+			dir->size = htole32(padsize);
+			size_so_far += padsize;
+			dir++;
+		}
+		strncpy(dir->name, cur->name, sizeof(dir->name));
+		dir->extinfo_size = htole16(cur->extinfo_size);
+		dir->size = htole32(cur->size);
+		dir++;
+		size_so_far += (cur->size + 15) & ~15;
+		cur = cur->next;
+	}
+}
+
+void make_rom(void **data, size_t *size)
+{
+	struct lump_s *romdir = NULL;
+	size_t offset = 0;
+	*data = NULL;
+	*size = 0;
+
+	romdir = get_lump_for_name("ROMDIR");
+	if (!romdir) errx(1, "no ROMDIR lump");
+
+	for (struct romdir_s *cur = romdir->data; cur->name[0]; cur++) {
+		*size += (cur->size + 15) & ~15;
+	}
+
+	*data = calloc(1, *size);
+	if (!*data) err(1, "calloc failure");
+
+	for (struct lump_s *cur = head; cur; cur = cur->next) {
+		if (cur->fixedaddr_present && (cur->fixedaddr != offset)) {
+			size_t padsize = cur->fixedaddr - offset;
+			offset += padsize;
+		}
+		memcpy(*data + offset, cur->data, cur->size);
+		offset += (cur->size + 15) & ~15;
+	}
+}
+
 %}
 %%
 [\t ]+
 
-^[^\t ]+ {
+^[^\t -][^\t \n]* {
 	struct MappedFile_s m = {0};
 	//printf("filename:\t%s\n", yytext);
-	
 	m = MappedFile_Open(yytext, false);
-	if (!m.data) err(1, "couldn't open file for reading");
+	if (!m.data) err(1, "couldn't open file \"%s\" for reading", yytext);
 	new_lump();
 	strncpy(tail->name, yytext, sizeof(tail->name));
 	tail->size = m.size;
@@ -204,7 +281,13 @@ FIXEDADDR=0x[0-9a-fA-F]+ {
 	tail->fixedaddr = strtol(yytext + strlen("FIXEDADDR=0x"), NULL, 16);
 	tail->fixedaddr_present = true;
 }
-. { printf("IDKIDKIDK\n"); }
+
+^-.* {
+	// this is a comment.
+	// do nothing.
+}
+
+. { printf("IDKIDKIDK %s\n", yytext); }
 \n { }
 %%
 int main(int argc, char *argv[])
@@ -212,16 +295,37 @@ int main(int argc, char *argv[])
 	yylex();
 	//print_lumps();
 	make_extinfo();
+	make_romdir();
 
-	struct romlump_s *extinfo;
+	struct lump_s *extinfo;
 	extinfo = get_lump_for_name("EXTINFO");
 	if (!extinfo) errx(1, "couldn't find extinfo");
 	struct MappedFile_s m = MappedFile_Create("myextinfo.bin", extinfo->size);
-	if (!m.data) err(1, "couldn't open file for writing");
+	if (!m.data) err(1, "couldn't open file \"%s\" for writing", "myextinfo.bin");
 	memcpy(m.data, extinfo->data, extinfo->size);
 	MappedFile_Close(m);
 	m.data = NULL;
-	hexdump(extinfo->data, extinfo->size);
+
+	struct lump_s *romdir;
+	romdir = get_lump_for_name("ROMDIR");
+	if (!romdir) errx(1, "couldn't find romdir");
+	m = MappedFile_Create("myromdir.bin", romdir->size);
+	if (!m.data) err(1, "couldn't open file \"%s\" for writing", "myromdir.bin");
+	memcpy(m.data, romdir->data, romdir->size);
+	MappedFile_Close(m);
+	m.data = NULL;
+
+	void *data = NULL;
+	size_t size = 0;
+	make_rom(&data, &size);
+	m = MappedFile_Create("rom", size);
+	if (!m.data) err(1, "couldn't open file \"%s\" for writing", "rom");
+	memcpy(m.data, data, size);
+	MappedFile_Close(m);
+	m.data = NULL;
+	free(data);
+	data = NULL;
+
 	free_lumps();
 	return EXIT_SUCCESS;
 }

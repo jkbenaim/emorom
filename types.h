@@ -3,21 +3,20 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define MAXCOMMENTSIZE (250)
-
-struct __attribute__((packed)) romdir_e {
+struct __attribute__((packed)) romdir_s {
 	char name[10];
-	uint16_t ext_info_size;
-	uint32_t file_size;
+	uint16_t extinfo_size;
+	uint32_t size;
 };
 
-struct __attribute__((packed)) extinfo_entry_s {
+struct __attribute__((packed)) extinfo_s {
 	uint8_t val1;
 	uint8_t val2;
 	uint8_t len;
 	uint8_t type;
 	uint8_t data[];
 };
+#define MAXCOMMENTSIZE (256 - sizeof(struct extinfo_s))
 
 enum extinfo_types_e {
 	ET_DATE = 1,
@@ -26,9 +25,9 @@ enum extinfo_types_e {
 	ET_FIXEDADDR = 127,
 };
 
-struct romlump_s {
-	struct romlump_s *next;
-	struct romlump_s *prev;
+struct lump_s {
+	struct lump_s *next;
+	struct lump_s *prev;
 	void *data;
 	char name[10];	// possibly without null terminator
 	unsigned size;
