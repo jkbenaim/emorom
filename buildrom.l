@@ -1,5 +1,6 @@
 %option noyywrap
 %{
+#include "endian.h"
 #include <err.h>
 #include <stdlib.h>
 #include <sys/stat.h>
