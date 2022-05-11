@@ -20,6 +20,7 @@ collect2: ld returned 1 exit status
 #include <byteswap.h>
 #include <endian.h>
 
+#ifndef htole16
 #if __BYTE_ORDER == __BIG_ENDIAN
 #define htole16(x) bswap_16(x)
 #define htole32(x) bswap_32(x)
@@ -38,6 +39,7 @@ collect2: ld returned 1 exit status
 #define htobe32(x) bswap_32(x)
 #define be16toh(x) bswap_16(x)
 #define be32toh(x) bswap_32(x)
+#endif
 #endif
 
 #endif
