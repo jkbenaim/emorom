@@ -1,22 +1,6 @@
 #ifndef _ENDIAN_H_
 #define _ENDIAN_H_
 
-/*
-2rom.o: In function `main':
-2rom.c(.text+0x7cc): undefined reference to `be32toh'
-2rom.c(.text+0x7f8): undefined reference to `le32toh'
-2rom.c(.text+0x928): undefined reference to `be16toh'
-2rom.c(.text+0x950): undefined reference to `be32toh'
-2rom.c(.text+0x984): undefined reference to `le16toh'
-2rom.c(.text+0x9ac): undefined reference to `le32toh'
-buildrom.o: In function `make_romdir':
-buildrom.c(.text+0xb14): undefined reference to `htole16'
-buildrom.c(.text+0xb74): undefined reference to `htole32'
-buildrom.c(.text+0xbdc): undefined reference to `htole16'
-buildrom.c(.text+0xc40): undefined reference to `htole32'
-collect2: ld returned 1 exit status
-*/
-
 #include <byteswap.h>
 #include <endian.h>
 
