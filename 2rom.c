@@ -23,25 +23,6 @@
 extern char *__progname;
 static void noreturn usage(void);
 
-struct fixie_s {
-	const char *name;
-	unsigned addr;
-} fixies[] = {
-	{   "RESET",       0x0},
-	{   "RDRAM",   0x41000},
-	{  "RDRAM1",   0x44000},
-	{  "RDRAM2",   0x47000},
-	{ "IOPBOOT",   0x4a000},
-	{    "TBIN",   0x4b800},
-	{   "KROMG",   0x64000},
-	{    "KROM",   0x66000},
-	{  "ROMVER",   0x7ff00}, // here if deckard, otherwise after extinfo
-	{  "VERSTR",   0x7ff30},
-	{"ROMGSCRT",   0x80000},
-	{ "DECKARD",  0x3e0000},
-	{0},
-};
-
 enum mode_e {
 	MODE_IDK,
 	MODE_LIST,
@@ -53,7 +34,6 @@ enum endianness_e {
 	E_IDK,
 	E_LITTLE,
 	E_BIG,
-	E_BUILD,
 };
 
 void print_extinfo(struct extinfo_s *e)
