@@ -1,9 +1,9 @@
-target  ?= ps2romtool
-objects := $(patsubst %.c,%.o,$(wildcard *.c))
+target  ?= 2rom
+objects := 2rom.o buildrom.o mapfile.o hexdump.o
 
-libs:=sqlite3
+libs:=
 
-#EXTRAS += -fsanitize=undefined -fsanitize=null -fcf-protection=full -fstack-protector-all -fstack-check -Wimplicit-fallthrough -flto
+EXTRAS += -fsanitize=undefined -fsanitize=null -fcf-protection=full -fstack-protector-all -fstack-check -Wimplicit-fallthrough -flto
 
 ifdef libs
 LDLIBS  += $(shell pkg-config --libs   ${libs})
@@ -18,8 +18,6 @@ all:	$(target)
 
 .PHONY: clean
 clean:
-	rm -f $(target) $(objects) lex lex.o
-
-lex: lex.o mapfile.o hexdump.o
+	rm -f $(target) $(objects)
 
 $(target): $(objects)

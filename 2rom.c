@@ -18,6 +18,7 @@
 #include "hexdump.h"
 #include "mapfile.h"
 #include "types.h"
+#include "buildrom.h"
 
 extern char *__progname;
 static void noreturn usage(void);
@@ -45,12 +46,14 @@ enum mode_e {
 	MODE_IDK,
 	MODE_LIST,
 	MODE_EXTRACT,
+	MODE_BUILD,
 };
 
 enum endianness_e {
 	E_IDK,
 	E_LITTLE,
 	E_BIG,
+	E_BUILD,
 };
 
 void print_extinfo(struct extinfo_s *e)
@@ -89,19 +92,17 @@ int num2bcd(unsigned num)
 
 int main(int argc, char *argv[])
 {
-	char *filename = NULL;
-	int ch;
-	enum mode_e mode = MODE_IDK;
-	struct romdir_s *romdir;
+	FILE *fdir = NULL;
+	bool makedirtxt = true;
+	char *infilename = NULL;
+	char *outfilename = NULL;
 	enum endianness_e endianness;
+	enum mode_e mode = MODE_IDK;
+	int ch;
+	struct romdir_s *romdir;
 	
-	while ((ch = getopt(argc, argv, "lxf:")) != -1)
+	while ((ch = getopt(argc, argv, "lxbi:o:n")) != -1)
 		switch (ch) {
-		case 'f':
-			if (filename)
-				usage();
-			filename = optarg;
-			break;
 		case 'l':
 			if (mode != MODE_IDK)
 				usage();
@@ -112,19 +113,59 @@ int main(int argc, char *argv[])
 				usage();
 			mode = MODE_EXTRACT;
 			break;
+		case 'b':
+			if (mode != MODE_IDK)
+				usage();
+			mode = MODE_BUILD;
+			break;
+		case 'i':
+			if (infilename)
+				usage();
+			infilename = optarg;
+			break;
+		case 'o':
+			if (outfilename)
+				usage();
+			outfilename = optarg;
+			break;
+		case 'n':
+			makedirtxt = false;
+			break;
 		default:
 			usage();
 		}
 	argc -= optind;
 	argv += optind;
-	if (not filename)
-		usage();
-	if (mode == MODE_IDK)
-		usage();
 	if (*argv != NULL)
 		usage();
 
-	struct MappedFile_s m = MappedFile_Open(filename, false);
+	switch (mode) {
+	case MODE_LIST:
+		if (!infilename)
+			usage();
+		fdir = stdout;
+		break;
+	case MODE_EXTRACT:
+		if (!infilename)
+			usage();
+		if (makedirtxt) {
+			fdir = fopen("dir.txt", "w");
+			if (!fdir) err(1, "couldn't open \"%s\" for writing", "dir.txt");
+		}
+		break;
+	case MODE_BUILD:
+		if (!infilename)
+			infilename = "dir.txt";
+		if (!outfilename)
+			outfilename = "out.rom";
+		return buildrom(outfilename, infilename);
+		break;
+	default:
+		usage();
+		break;
+	}
+
+	struct MappedFile_s m = MappedFile_Open(infilename, false);
 	if (!m.data) err(1, "couldn't open file");
 
 	romdir = memmem(
@@ -205,7 +246,7 @@ int main(int argc, char *argv[])
 			}
 		}
 
-		if (should_display) printf("%-10s     ", name);
+		if (should_display && makedirtxt) fprintf(fdir, "%-10s     ", name);
 		bool did_set_date = false;
 		time_t mytime = 0;
 		struct tm mytm = {0};
@@ -214,8 +255,9 @@ int main(int argc, char *argv[])
 			e = (struct extinfo_s *)(extinfo_ptr + extinfo_offset + i);
 			switch(e->type) {
 			case ET_DATE:
-				if (should_display)
-					printf(" %02x%02x-%02x%02x",
+				if (should_display && makedirtxt)
+					fprintf(fdir,
+						" %02x%02x-%02x%02x",
 						e->data[3],
 						e->data[2],
 						e->data[1],
@@ -230,30 +272,29 @@ int main(int argc, char *argv[])
 					did_set_date = true;
 				break;
 			case ET_VERSION:
-				if (should_display)
-					printf(" v%d.%d",
+				if (should_display && makedirtxt)
+					fprintf(fdir,
+						" v%d.%d",
 						e->val2,
 						e->val1
 					);
 				break;
 			case ET_COMMENT:
-				if (should_display)
-					printf(" \"%s\"", e->data);
+				if (should_display && makedirtxt)
+					fprintf(fdir, " \"%s\"", e->data);
 				break;
 			case ET_FIXEDADDR:
-				if (should_display)
-					printf(" FIXEDADDR=0x%x", offset);
+				if (should_display && makedirtxt)
+					fprintf(fdir, " FIXEDADDR=0x%x", offset);
 				break;
 			default:
-				if (should_display) {
-					printf("\n unknown extinfo tag %d\n", e->type);
-					print_extinfo(e);
-				}
+				fprintf(stderr, "\n unknown extinfo tag %d\n", e->type);
+				print_extinfo(e);
 				break;
 			}
 			i += sizeof(struct extinfo_s) + e->len;
 		}
-		if (should_display) printf("\n");
+		if (should_display && makedirtxt) fprintf(fdir, "\n");
 
 		if ((mode == MODE_EXTRACT) && should_extract) {
 			if (!strcmp("-", name)) {
@@ -282,8 +323,9 @@ int main(int argc, char *argv[])
 
 static void noreturn usage(void)
 {
-	(void)fprintf(stderr, "usage: \t%1$s -l -f romimg\n"
-				"\t%1$s -x -f romimg\n",
+	(void)fprintf(stderr, "usage: \t%1$s -l -i romimg\n"
+				"\t%1$s -x -i romimg\n"
+				"\t%1$s -b [-i dir.txt] [-o out.rom]\n",
 		__progname
 	);
 	exit(EXIT_FAILURE);

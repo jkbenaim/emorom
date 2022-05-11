@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include "mapfile.h"
 
-struct MappedFile_s MappedFile_Create(char *filename, size_t size)
+struct MappedFile_s MappedFile_Create(const char *filename, size_t size)
 {
 	__label__ out_error, out_ok;
 	LPVOID p;
@@ -93,7 +93,7 @@ out_ok:
 	return m;
 }
 
-struct MappedFile_s MappedFile_Open(char *filename, bool writable)
+struct MappedFile_s MappedFile_Open(const char *filename, bool writable)
 {
 	__label__ out_error, out_ok;
 	LPVOID p;
@@ -175,7 +175,7 @@ void MappedFile_Close(struct MappedFile_s m)
 #include <string.h>
 #include "mapfile.h"
 
-struct MappedFile_s MappedFile_Create(char *filename, size_t size)
+struct MappedFile_s MappedFile_Create(const char *filename, size_t size)
 {
 	__label__ out_error, out_ok, out_close;
 	struct MappedFile_s m;
@@ -213,7 +213,7 @@ out_ok:
 	return m;
 }
 
-struct MappedFile_s MappedFile_Open(char *filename, bool writable)
+struct MappedFile_s MappedFile_Open(const char *filename, bool writable)
 {
 	__label__ out_error, out_ok, out_close;
 	struct MappedFile_s m;

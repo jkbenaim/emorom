@@ -3,6 +3,7 @@
 #include <err.h>
 #include <stdlib.h>
 #include <sys/stat.h>
+#include "buildrom.h"
 #include "hexdump.h"
 #include "mapfile.h"
 #include "types.h"
@@ -290,23 +291,32 @@ FIXEDADDR=0x[0-9a-fA-F]+ {
 . { printf("IDKIDKIDK %s\n", yytext); }
 \n { }
 %%
-int main(int argc, char *argv[])
+int buildrom(const char *romname, const char *listingname)
 {
+	FILE *listing = NULL;
+	struct lump_s *extinfo = {0};
+	struct MappedFile_s m = {0};
+	struct lump_s *romdir = {0};
+	void *data = NULL;
+	size_t size = 0;
+
+	listing = fopen(listingname, "r");
+	if (!listing) err(1, "couldn't open listing file\"%s\" for reading", listingname);
+	yyin = listing;
 	yylex();
 	//print_lumps();
 	make_extinfo();
 	make_romdir();
 
-	struct lump_s *extinfo;
+	/*
 	extinfo = get_lump_for_name("EXTINFO");
 	if (!extinfo) errx(1, "couldn't find extinfo");
-	struct MappedFile_s m = MappedFile_Create("myextinfo.bin", extinfo->size);
+	m = MappedFile_Create("myextinfo.bin", extinfo->size);
 	if (!m.data) err(1, "couldn't open file \"%s\" for writing", "myextinfo.bin");
 	memcpy(m.data, extinfo->data, extinfo->size);
 	MappedFile_Close(m);
 	m.data = NULL;
 
-	struct lump_s *romdir;
 	romdir = get_lump_for_name("ROMDIR");
 	if (!romdir) errx(1, "couldn't find romdir");
 	m = MappedFile_Create("myromdir.bin", romdir->size);
@@ -314,12 +324,11 @@ int main(int argc, char *argv[])
 	memcpy(m.data, romdir->data, romdir->size);
 	MappedFile_Close(m);
 	m.data = NULL;
+	*/
 
-	void *data = NULL;
-	size_t size = 0;
 	make_rom(&data, &size);
-	m = MappedFile_Create("rom", size);
-	if (!m.data) err(1, "couldn't open file \"%s\" for writing", "rom");
+	m = MappedFile_Create(romname, size);
+	if (!m.data) err(1, "couldn't open file \"%s\" for writing", romname);
 	memcpy(m.data, data, size);
 	MappedFile_Close(m);
 	m.data = NULL;
@@ -329,3 +338,4 @@ int main(int argc, char *argv[])
 	free_lumps();
 	return EXIT_SUCCESS;
 }
+

@@ -18,8 +18,8 @@ struct MappedFile_s {
 #endif
 };
 
-struct MappedFile_s MappedFile_Create(char *filename, size_t size);
-struct MappedFile_s MappedFile_Open(char *filename, bool writable);
+struct MappedFile_s MappedFile_Create(const char *filename, size_t size);
+struct MappedFile_s MappedFile_Open(const char *filename, bool writable);
 void MappedFile_Close(struct MappedFile_s m);
 
 /* _MAPFILE_H_ */
