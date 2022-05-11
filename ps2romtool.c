@@ -6,7 +6,11 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#if __STDC_VERSION__ >= 201112L
 #include <stdnoreturn.h>
+#else
+#define noreturn
+#endif
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
