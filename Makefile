@@ -1,14 +1,7 @@
 target  ?= 2rom
 objects := 2rom.o buildrom.o mapfile.o hexdump.o
 
-libs:=
-
 #EXTRAS += -ggdb -Og -fsanitize=undefined -fsanitize=null -fcf-protection=full -fstack-protector-all -fstack-check -Wimplicit-fallthrough -flto
-
-ifdef libs
-LDLIBS  += $(shell pkg-config --libs   ${libs})
-CFLAGS  += $(shell pkg-config --cflags ${libs})
-endif
 
 LDFLAGS += ${EXTRAS}
 CFLAGS  += ${EXTRAS}
@@ -19,5 +12,15 @@ all:	$(target)
 .PHONY: clean
 clean:
 	rm -f $(target) $(objects)
+
+.PHONY: install
+install: ${target} ${target.1}
+	install -m 755 ${target} /usr/local/bin
+	install -m 755 -d /usr/local/share/man/man1
+	install -m 644 ${target}.1 /usr/local/share/man/man1
+
+.PHONY: uninstall
+uninstall:
+	rm -f /usr/local/bin/${target} /usr/local/share/man/man1/${target}.1
 
 $(target): $(objects)

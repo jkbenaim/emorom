@@ -316,8 +316,8 @@ int main(int argc, char *argv[])
 
 static void noreturn usage(void)
 {
-	(void)fprintf(stderr, "usage: \t%1$s -l -i romimg\n"
-				"\t%1$s -x -i romimg\n"
+	(void)fprintf(stderr, "usage: \t%1$s -l -i in.rom\n"
+				"\t%1$s -x -i in.rom\n"
 				"\t%1$s -b [-vv] [-i dir.txt] [-o out.rom]\n",
 		__progname
 	);
