@@ -66,6 +66,17 @@ void print_lumps()
 	}
 }
 
+int count_lumps()
+{
+	struct lump_s *lump = head;
+	int numFiles = 0;
+	while (lump) {
+		numFiles++;
+		lump = lump->next;
+	}
+	return numFiles;
+}
+
 struct lump_s *get_lump_for_name(const char *name)
 {
 	struct lump_s *cur = head;
@@ -291,7 +302,7 @@ FIXEDADDR=0x[0-9a-fA-F]+ {
 . { printf("IDKIDKIDK %s\n", yytext); }
 \n { }
 %%
-int buildrom(const char *romname, const char *listingname)
+int buildrom(const char *romname, const char *listingname, int verbose)
 {
 	FILE *listing = NULL;
 	struct lump_s *extinfo = {0};
@@ -334,6 +345,16 @@ int buildrom(const char *romname, const char *listingname)
 	m.data = NULL;
 	free(data);
 	data = NULL;
+	if (verbose >= 2) {
+		print_lumps();
+	}
+	if (verbose >= 1) {
+		warnx("built \"%s\": %d files, %lu bytes",
+			romname,
+			count_lumps(),
+			size
+		);
+	}
 
 	free_lumps();
 	return EXIT_SUCCESS;

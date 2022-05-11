@@ -79,9 +79,10 @@ int main(int argc, char *argv[])
 	enum endianness_e endianness;
 	enum mode_e mode = MODE_IDK;
 	int ch;
+	int verbose = 0;
 	struct romdir_s *romdir;
 	
-	while ((ch = getopt(argc, argv, "lxbi:o:n")) != -1)
+	while ((ch = getopt(argc, argv, "lxbi:o:nv")) != -1)
 		switch (ch) {
 		case 'l':
 			if (mode != MODE_IDK)
@@ -111,6 +112,9 @@ int main(int argc, char *argv[])
 		case 'n':
 			makedirtxt = false;
 			break;
+		case 'v':
+			verbose++;
+			break;
 		default:
 			usage();
 		}
@@ -119,14 +123,21 @@ int main(int argc, char *argv[])
 	if (*argv != NULL)
 		usage();
 
+	/*
+	 *  check arguments for correctness
+	 */
 	switch (mode) {
 	case MODE_LIST:
 		if (!infilename)
+			usage();
+		if (verbose > 0)
 			usage();
 		fdir = stdout;
 		break;
 	case MODE_EXTRACT:
 		if (!infilename)
+			usage();
+		if (verbose > 0)
 			usage();
 		if (makedirtxt) {
 			fdir = fopen("dir.txt", "w");
@@ -138,7 +149,9 @@ int main(int argc, char *argv[])
 			infilename = "dir.txt";
 		if (!outfilename)
 			outfilename = "out.rom";
-		return buildrom(outfilename, infilename);
+		if (verbose > 2)
+			usage();
+		return buildrom(outfilename, infilename, verbose);
 		break;
 	default:
 		usage();
@@ -305,7 +318,7 @@ static void noreturn usage(void)
 {
 	(void)fprintf(stderr, "usage: \t%1$s -l -i romimg\n"
 				"\t%1$s -x -i romimg\n"
-				"\t%1$s -b [-i dir.txt] [-o out.rom]\n",
+				"\t%1$s -b [-vv] [-i dir.txt] [-o out.rom]\n",
 		__progname
 	);
 	exit(EXIT_FAILURE);
