@@ -245,31 +245,54 @@ int main(int argc, char *argv[])
 		struct tm mytm = {0};
 		for (size_t i = 0; i < extinfo_size;) {
 			struct extinfo_s *e;
+			uint32_t *temp;
 			e = (struct extinfo_s *)(extinfo_ptr + extinfo_offset + i);
+			temp = (uint32_t *)e;
+			if (endianness == E_LITTLE)
+				*temp = le32toh(*temp);
+			else if (endianness == E_BIG)
+				*temp = be32toh(*temp);
+			else errx(1, "bad endianness");
 			switch(e->type) {
 			case ET_DATE:
-				if (should_display && makedirtxt)
-					fprintf(fdir,
-						" %02x%02x-%02x%02x",
-						e->data[3],
-						e->data[2],
-						e->data[1],
-						e->data[0]
-					);
-				mytm.tm_year = bcd2num(e->data[3])*100 - 1900;
-				mytm.tm_year += bcd2num(e->data[2]);
-				mytm.tm_mon = bcd2num(e->data[1]) - 1;
-				mytm.tm_mday = bcd2num(e->data[0]);
+				if (endianness == E_LITTLE) {
+					mytm.tm_year = bcd2num(e->data[3])*100 - 1900;
+					mytm.tm_year += bcd2num(e->data[2]);
+					mytm.tm_mon = bcd2num(e->data[1]) - 1;
+					mytm.tm_mday = bcd2num(e->data[0]);
+				} else {
+					mytm.tm_year = bcd2num(e->data[0])*100 - 1900;
+					mytm.tm_year += bcd2num(e->data[1]);
+					mytm.tm_mon = bcd2num(e->data[2]) - 1;
+					mytm.tm_mday = bcd2num(e->data[3]);
+				}
 				mytime = mktime(&mytm);
 				if (mytime != (time_t)-1)
 					did_set_date = true;
+				if (should_display && makedirtxt)
+					fprintf(fdir,
+						" %04d-%02d%02d",
+						mytm.tm_year + 1900,
+						mytm.tm_mon + 1,
+						mytm.tm_mday
+					);
 				break;
 			case ET_VERSION:
+				uint8_t major;
+				uint8_t minor;
+				if (endianness == E_LITTLE) {
+					major = e->val2;
+					minor = e->val1;
+				} else {
+					major = e->val1;
+					minor = e->val2;
+				}
+
 				if (should_display && makedirtxt)
 					fprintf(fdir,
 						" v%d.%d",
-						e->val2,
-						e->val1
+						major,
+						minor
 					);
 				break;
 			case ET_COMMENT:
