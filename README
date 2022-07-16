@@ -1,0 +1,67 @@
+2ROM(1)                     General Commands Manual                    2ROM(1)
+
+
+
+NAME
+       2rom - a utility for working with PlayStation 2 ROM images
+
+SYNOPSIS
+       2rom -l -i in.rom
+       2rom -x -i in.rom
+       2rom -b [-vv] [-i dir.txt] [-o out.rom]
+
+DESCRIPTION
+       2rom  will list or extract files from a PlayStation 2 ROM image, or re-
+       build an image from loose files.
+
+   Operation Mode
+       The operations listed in the table below tell 2rom what operation it is
+       to perform. Exactly one of them must be given. The meaning of other ar-
+       guments depends on the operation mode requested.
+
+       -l     List all files found within a ROM image. The image must be spec-
+              ified with the -i option.
+
+       -x     Extract  all  files  found within a ROM image. The image must be
+              specified with the -i option. A directory file, dir.txt, is also
+              created.
+
+       -b [-vv] [-i dir.txt] [-o out.rom]
+              Build a ROM image from lose files. The options are:
+
+              -v, -vv
+                     Verbosely  build. With -v, 2rom will give a short summary
+                     after the image has been built. With -vv, 2rom will addi-
+                     tionally list all files processed.
+
+              -i dir.txt
+                     Specifies the directory file to use as a template for the
+                     ROM image. If this option is  not  present,  the  default
+                     value of dir.txt is used.
+
+              -o out.rom
+                     Specifies  the name of the output file. If this option is
+                     not present, the default value of out.rom is used.
+
+RETURN VALUE
+       2rom's exit code indicates whether it was successfully able to  perform
+       the operation. 0 is returned for success. Nonzero is returned for fail-
+       ure.
+
+BUGS
+       2rom cannot build a big-endian image.
+
+BUG REPORTS
+       Report bugs to <jkbenaim@gmail.com>.
+
+COPYRIGHT
+       Copyright (C) 2022 Jason Benaim.
+       License GPLv3+: GNU GPL version 3 or later <https://gnu.org/li-
+       censes/gpl.html>.
+       This  is  free  software;  you  are free to change and redistribute it.
+       There is NO WARRANTY, to the extent permitted by law.
+
+
+
+2ROM                             May 10, 2022                          2ROM(1)
+
