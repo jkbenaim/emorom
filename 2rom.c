@@ -245,14 +245,15 @@ int main(int argc, char *argv[])
 		struct tm mytm = {0};
 		for (size_t i = 0; i < extinfo_size;) {
 			struct extinfo_s *e;
-			uint32_t *temp;
+			uint32_t temp;
 			e = (struct extinfo_s *)(extinfo_ptr + extinfo_offset + i);
-			temp = (uint32_t *)e;
+			memcpy(&temp, e, 4);
 			if (endianness == E_LITTLE)
-				*temp = le32toh(*temp);
+				temp = le32toh(temp);
 			else if (endianness == E_BIG)
-				*temp = be32toh(*temp);
+				temp = be32toh(temp);
 			else errx(1, "bad endianness");
+			memcpy(e, &temp, 4);
 			switch(e->type) {
 			case ET_DATE:
 				if (endianness == E_LITTLE) {
