@@ -1,5 +1,5 @@
-target  ?= 2rom
-objects := 2rom.o buildrom.o mapfile.o hexdump.o
+target  ?= emorom
+objects := emorom.o buildrom.o mapfile.o hexdump.o
 
 #EXTRAS += -ggdb -Og -fsanitize=undefined -fsanitize=null -fcf-protection=full -fstack-protector-all -fstack-check -Wimplicit-fallthrough -flto
 
@@ -7,7 +7,7 @@ LDFLAGS += ${EXTRAS}
 CFLAGS  += ${EXTRAS}
 
 .PHONY: all
-all:	$(target)
+all:	$(target) README
 
 .PHONY: clean
 clean:
@@ -22,5 +22,8 @@ install: ${target} ${target.1}
 .PHONY: uninstall
 uninstall:
 	rm -f /usr/local/bin/${target} /usr/local/share/man/man1/${target}.1
+
+README: ${target}.1
+	MANWIDTH=77 man --nh --nj ./${target}.1 | col -b > $@
 
 $(target): $(objects)
