@@ -1,5 +1,5 @@
 target  ?= emorom
-objects := emorom.o buildrom.o mapfile.o hexdump.o
+objects := emorom.o buildrom.o mapfile.o
 
 #EXTRAS += -ggdb -Og -fsanitize=undefined -fsanitize=null -fcf-protection=full -fstack-protector-all -fstack-check -Wimplicit-fallthrough -flto
 

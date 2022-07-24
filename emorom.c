@@ -15,7 +15,6 @@
 #include <time.h>
 #include <unistd.h>
 #include <utime.h>
-#include "hexdump.h"
 #include "mapfile.h"
 #include "types.h"
 #include "buildrom.h"
@@ -44,9 +43,6 @@ void print_extinfo(struct extinfo_s *e)
 		e->len,
 		e->type
 	);
-	if (e->len > 0) {
-		hexdump(e->data, e->len);
-	}
 }
 
 int bcd2num(unsigned bcd)
@@ -317,7 +313,6 @@ int main(int argc, char *argv[])
 			if (!strcmp("-", name)) {
 				snprintf(name, sizeof(name) - 1, "%08xh", offset);
 				name[sizeof(name) - 1] = '\0';
-				hexdump(m.data + offset, file_size);
 			}
 			n = MappedFile_Create(name, file_size);
 			if (!n.data) err(1, "couldn't create file");

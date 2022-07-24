@@ -5,7 +5,6 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 #include "buildrom.h"
-#include "hexdump.h"
 #include "mapfile.h"
 #include "types.h"
 
