@@ -1,0 +1,58 @@
+'\" -*- coding: UTF-8 -*-
+.TH emorom 1 "July 2022" "emorom"
+.SH NIMI
+emorom \- työkalu PlayStation 2 ROM-kuvien kanssa työskentelyyn
+.SH SYNOPSIS
+.nf
+\fBemorom\fR \fB\-l\fR \fB\-i\fR \fIin.rom\fR
+\fBemorom\fR \fB\-x\fR \fB\-i\fR \fIin.rom\fR
+\fBemorom\fR \fB\-b\fR [\fB\-vv\fR] [\fB\-i \fIdir.txt\fR] [\fB\-o\fR \fIout.rom\fR]
+.fi
+.SH KUVAUS
+\fIemorom\fR listaa tai purkaa tiedostot PlayStation 2 ROM-kuvasta tai
+rakentaa kuvan irrallisista tiedostoista.
+.PP
+.SS Toimintotilat
+Alemman listan operaatiot kertovat \fIemoromille\fR, minkä operaation
+suorittaa. Ainoastaan yksi pitää antaa. Muiden komentojen merkitykset
+riippuvat pyydetystä operaatiosta.
+.TP
+\fB\-l\fR
+Listaa kaikki tiedostot ROM-kuvassa. Kuva täytyy määrittää \fB-i\fR-toiminnolla.
+.TP
+\fB\-x\fR
+Purkaa kaikki tiedostot ROM-kuvassa. Kuva täytyy määrittää \fB-i\fR-toiminnolla.
+Hakemisto tiedosto, \fIdir.txt\fR, luodaan myös.
+.TP
+\fB\-b\fR [\fB\-vv\fR] [\fB\-i \fIdir.txt\fR] [\fB\-o\fR \fIout.rom\fR]
+Rakentaa ROM-kuvan irrallisista tiedostoista. Toiminnot ovat:
+.RS
+.TP
+\fB\-v\fR, \fB\-vv\fR
+Runsassanainen koontiversio. Komennolla \fB\-v\fR, \fBemorom\fR antaa
+lyhyen yhteenvedon kuvan rakentamisen jälkeen. Komennolla \fB\-vv\fR, \fBemorom\fR
+listaa myös käsitellyt tiedostot.
+.TP
+\fB\-i\fR \fIdir.txt\fR
+Määrittää hakemistotiedoston, jota käytetään mallina ROM-kuvaan.
+Jos tämä toiminto puuttuu, oletus arvo on \fIdir.txt\.
+.TP
+\fB\-o\fR \fIout.rom\fR
+Määrittää ulostulotiedoston nimen.
+Jos tämä toiminto puuttuu, oletus arvo on \fIout.rom\fR.
+.SH PALUUARVO
+\fBemoromin\fR poistumiskoodi ilmaisee, jos toiminnon suorittaminen
+onnistui. \fB0\fR merkitsee onnistumista ja muu epäonnistumista.
+.SH BUGIT
+\fBemorom\fR ei pysty rakentamaan kuvia big-endian -muodossa.
+.SH BUGIRAPORTIT
+Lähetä bugiraportit osoitteeseen <jkbenaim@gmail.com>.
+.SH TEKIJÄNOIKEUS
+Tekijänoikeus \(co 2022 Jason Benaim.
+.br
+.na
+Lisenssi GPLv3+: GNU GPL versio 3 tai myöhempi (englanniksi) <https://gnu.org/licenses/gpl.html>.
+.br
+.ad
+Tämä on vapaa ohjelma; saat muokata ja levittää sitä vapaasti.
+EI TAKUUTA lain sallimassa laajuudessa.
