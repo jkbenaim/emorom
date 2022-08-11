@@ -1,5 +1,5 @@
 '\" -*- coding: UTF-8 -*-
-.TH emorom 1 "July 2022" "emorom"
+.TH emorom 1 "Heinäkuu 2022" "emorom"
 .SH NIMI
 emorom \- työkalu PlayStation 2 ROM-kuvien kanssa työskentelyyn
 .SH SYNOPSIS
@@ -35,7 +35,7 @@ listaa myös käsitellyt tiedostot.
 .TP
 \fB\-i\fR \fIdir.txt\fR
 Määrittää hakemistotiedoston, jota käytetään mallina ROM-kuvaan.
-Jos tämä toiminto puuttuu, oletus arvo on \fIdir.txt\.
+Jos tämä toiminto puuttuu, oletus arvo on \fIdir.txt\fR.
 .TP
 \fB\-o\fR \fIout.rom\fR
 Määrittää ulostulotiedoston nimen.
@@ -49,6 +49,7 @@ onnistui. \fB0\fR merkitsee onnistumista ja muu epäonnistumista.
 Lähetä bugiraportit osoitteeseen <jkbenaim@gmail.com>.
 .SH TEKIJÄNOIKEUS
 Tekijänoikeus \(co 2022 Jason Benaim.
+README-tiedoston käännös: PPLToast
 .br
 .na
 Lisenssi GPLv3+: GNU GPL versio 3 tai myöhempi (englanniksi) <https://gnu.org/licenses/gpl.html>.
