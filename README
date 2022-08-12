@@ -25,7 +25,7 @@ DESCRIPTION
 	      also created.
 
        -b [-vv] [-i dir.txt] [-o out.rom]
-	      Build a ROM image from lose files. The options are:
+	      Build a ROM image from loose files. The options are:
 
 	      -v, -vv
 		     Verbosely build. With -v, emorom will give a short
