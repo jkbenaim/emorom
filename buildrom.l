@@ -92,7 +92,6 @@ void make_extinfo()
 {
 	struct lump_s *extinfo;
 	struct lump_s *cur;
-	size_t offset = 0;
 
 	extinfo = get_lump_for_name("EXTINFO");
 	if (!extinfo)
@@ -115,7 +114,7 @@ void make_extinfo()
 		if (!extinfo->data)
 			errx(1, "realloc failure");
 		extinfo->size += size;
-		e = extinfo->data + extinfo->size - size;
+		e = (struct extinfo_s *)((uint8_t *)extinfo->data + extinfo->size - size);
 		memset(e, 0, size);
 		e->len = size - 4;
 		return e;
@@ -288,7 +287,6 @@ v[0-9]+\.[0-9]+ {
 }
 
 FIXEDADDR=0x[0-9a-fA-F]+ {
-	long addr;
 	//printf("\tfixedaddr:\t%s\n", yytext);
 	tail->fixedaddr = strtol(yytext + strlen("FIXEDADDR=0x"), NULL, 16);
 	tail->fixedaddr_present = true;
@@ -305,9 +303,7 @@ FIXEDADDR=0x[0-9a-fA-F]+ {
 int buildrom(const char *romname, const char *listingname, int verbose)
 {
 	FILE *listing = NULL;
-	struct lump_s *extinfo = {0};
 	struct MappedFile_s m = {0};
-	struct lump_s *romdir = {0};
 	void *data = NULL;
 	size_t size = 0;
 

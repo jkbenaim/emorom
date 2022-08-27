@@ -193,13 +193,12 @@ int main(int argc, char *argv[])
 			break;
 		}
 		if (!strcmp("EXTINFO", name)) {
-			extinfo_ptr = m.data + offset;
+			extinfo_ptr = (uint8_t *)m.data + offset;
 			break;
 		}
 		offset += (file_size+15) & ~15;
 	}
 	offset = 0;
-	bool last_file_was_padding = false;
 	for(struct romdir_s *cur = romdir; cur->name[0]; cur++) {
 		char name[11] = {'\0'};
 		uint16_t extinfo_size;
@@ -225,7 +224,7 @@ int main(int argc, char *argv[])
 		if(!strcmp("-", name)) {
 			should_extract = false;
 			//should_display = false;
-			uint8_t *filedata = (uint8_t *)(m.data + offset);
+			uint8_t *filedata = (uint8_t *)m.data + offset;
 			for (size_t i = 0; i < file_size; i++) {
 				if (filedata[i] != 0) {
 					should_extract = true;
@@ -242,7 +241,7 @@ int main(int argc, char *argv[])
 		for (size_t i = 0; i < extinfo_size;) {
 			struct extinfo_s *e;
 			uint32_t temp;
-			e = (struct extinfo_s *)(extinfo_ptr + extinfo_offset + i);
+			e = (struct extinfo_s *)((uint8_t *)extinfo_ptr + extinfo_offset + i);
 			memcpy(&temp, e, 4);
 			if (endianness == E_LITTLE)
 				temp = le32toh(temp);
@@ -275,6 +274,7 @@ int main(int argc, char *argv[])
 					);
 				break;
 			case ET_VERSION:
+			{
 				uint8_t major;
 				uint8_t minor;
 				if (endianness == E_LITTLE) {
@@ -291,6 +291,7 @@ int main(int argc, char *argv[])
 						major,
 						minor
 					);
+			}
 				break;
 			case ET_COMMENT:
 				if (should_display && makedirtxt)
@@ -298,7 +299,7 @@ int main(int argc, char *argv[])
 				break;
 			case ET_FIXEDADDR:
 				if (should_display && makedirtxt)
-					fprintf(fdir, " FIXEDADDR=0x%x", offset);
+					fprintf(fdir, " FIXEDADDR=0x%x", (int)offset);
 				break;
 			default:
 				fprintf(stderr, "\n unknown extinfo tag %d\n", e->type);
@@ -311,12 +312,12 @@ int main(int argc, char *argv[])
 
 		if ((mode == MODE_EXTRACT) && should_extract) {
 			if (!strcmp("-", name)) {
-				snprintf(name, sizeof(name) - 1, "%08xh", offset);
+				snprintf(name, sizeof(name) - 1, "%08xh", (int)offset);
 				name[sizeof(name) - 1] = '\0';
 			}
 			n = MappedFile_Create(name, file_size);
 			if (!n.data) err(1, "couldn't create file");
-			memcpy(n.data, m.data + offset, file_size);
+			memcpy(n.data, (uint8_t *)m.data + offset, file_size);
 			MappedFile_Close(n);
 			if (did_set_date) {
 				struct utimbuf times = {.actime = mytime, .modtime = mytime};
